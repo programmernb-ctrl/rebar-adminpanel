@@ -1,5 +1,6 @@
 import * as alt from 'alt-server';
 import { useRebar } from '@Server/index.js';
+import { adminpanelConfig } from '../shared/config.js';
 
 const Rebar = useRebar();
 const getter = Rebar.get.usePlayersGetter();
@@ -7,9 +8,16 @@ const Keybinder = Rebar.useKeybinder();
 
 async function adminpanelShow(player: alt.Player) {
     // useWebview(player).show('Adminpanel', 'page', true);
-    const view = Rebar.player.useWebview(player);
-    Rebar.player.useWorld(player).disableControls();
-    view.show('Adminpanel', 'page');
+    const character = Rebar.document.character.useCharacter(player);
+    const isMember = character.groups.memberOf('admin');
+
+    if (isMember || adminpanelConfig.Settings.adminMode === "true") {
+        const view = Rebar.player.useWebview(player);
+        Rebar.player.useWorld(player).disableControls();
+        view.show('Adminpanel', 'page');
+    } else {
+        return;
+    }
 }
 
 async function adminpanelHide(player: alt.Player) {
