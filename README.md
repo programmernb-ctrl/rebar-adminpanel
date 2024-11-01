@@ -1,6 +1,7 @@
 # rebar-adminpanel
 
-**_It's required that you go to your Rebar directory and setup some things first below are steps which have to be done before using the adminpanel_**
+[!IMPORTANT]
+It's required that you go to your Rebar directory and setup some things first below are steps which have to be done before using the adminpanel
 
 1. Go to ./webview/src/index.css
 2. Add following code to it at the end of index.css
