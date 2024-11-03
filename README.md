@@ -25,7 +25,7 @@ git clone https://github.com/programmernb-ctrl/rebar-adminpanel.git src/plugins/
 4. Should your character don't have the admin group you'll need to customize the config in `./shared/config.ts`
 
 ```typescript
-export const = adminpanelConfig = {
+export const adminpanelConfig = {
     adminMode: true, // true to see webview even if you don't got the admin group. mostly required to setup the plugin
 };
 ```
@@ -41,7 +41,7 @@ pnpm dev
 6. After you've executed the __Give Admin__ function in the __webview__ make sure you set `adminMode: false,` in the config `./shared/config.ts`
 
 ```typescript
-export const = adminpanelConfig = {
+export const adminpanelConfig = {
     adminMode: false, // this needs to be set so member who dont got the admin group simply cant see the adminpanel.
 }
 ```
