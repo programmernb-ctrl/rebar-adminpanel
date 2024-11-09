@@ -1,3 +1,6 @@
 export const adminpanelConfig = {
-    adminMode: false,
+    Settings: {
+        debug: false,
+        adminMode: false,
+    }
 };

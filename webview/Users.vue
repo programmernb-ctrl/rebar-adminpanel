@@ -1,8 +1,84 @@
+<script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useEvents } from '@Composables/useEvents';
+import { usePlayerStats } from '@Composables/usePlayerStats';
+import { adminPanelEvents } from '@Plugins/rebar-adminpanel/shared/events.js';
+
+const {
+        armour,
+        engineOn,
+        fps,
+        gear,
+        headlights,
+        health,
+        highbeams,
+        indicatorLights,
+        inVehicle,
+        inWater,
+        isAiming,
+        isFlying,
+        isTalking,
+        locked,
+        maxGear,
+        ping,
+        seat,
+        speed,
+        stamina,
+        street,
+        time,
+        vehicleHealth,
+        weapon,
+        weather,
+        zone,
+    } = usePlayerStats();
+
+const Events = useEvents();
+
+const playerDetails = ref<{ id: string; name: string; discordId: number; }[]>([]);
+const searchQuery = ref<string>('');
+
+Events.on(adminPanelEvents.WebView.getUsers, (details: { id: string; name: string; discordId: number; ip: string }[]) => {
+    playerDetails.value = details;
+});
+
+function closeAdminpanelUsers() {
+    Events.emitServer(adminPanelEvents.ToServer.closeUsers);
+}
+
+onMounted(() => {
+    Events.onKeyUp(adminPanelEvents.WebView.closeUserpanelCallback, adminPanelEvents.KeyCodes.escape, closeAdminpanelUsers);
+});
+
+onUnmounted(() => {
+    Events.offKeyUp(adminPanelEvents.WebView.closeUserpanelCallback);
+});
+
+const filteredPlayers = computed(() => {
+    if (!searchQuery.value) return playerDetails.value;
+    const lowercaseQuery = searchQuery.value.toLowerCase();
+    return playerDetails.value
+        .map((player) => ({
+            ...player,
+            highlighted: player.name.toLowerCase().includes(lowercaseQuery) || player.id.toString().includes(lowercaseQuery),
+        }))
+        .filter((player) => player.highlighted);
+});
+
+const searchResultMessage = computed(() => {
+    if (!searchQuery.value) return '';
+    const count = filteredPlayers.value.length;
+    return count > 0 ? `${count} user${count > 1 ? 's' : ''} found` : 'No users found';
+});
+
+const searchResultClass = computed(() => {
+    if (!searchQuery.value) return '';
+    return filteredPlayers.value.length > 0 ? 'bg-green-500' : 'bg-yellow-500';
+});
+</script>
+
 <template>
     <div class="flex h-screen w-screen items-center justify-center p-4">
-        <div
-            class="h-[50%] w-1/2 max-w-4xl rounded-lg border-2 border-solid border-red-500 bg-gray-800 text-white shadow-2xl"
-        >
+        <div class="h-[50%] w-1/2 max-w-4xl rounded-lg border-2 border-solid border-red-500 bg-gray-800 text-white shadow-2xl">
             <div class="flex h-full flex-col p-6">
                 <div class="mb-6 flex flex-col items-center justify-between sm:flex-row">
                     <h2 class="mb-4 text-2xl font-bold sm:mb-0">⚙️ User Management</h2>
@@ -11,7 +87,7 @@
                             v-model="searchQuery"
                             type="text"
                             placeholder="search users..."
-                            class="w-full rounded-md bg-gray-700 px-4 py-2 text-white text-xs focus:outline-none focus:ring-2 focus:ring-red-500 sm:w-64"
+                            class="w-full rounded-md bg-gray-700 px-4 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-red-500 sm:w-64"
                         />
                         <svg
                             class="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 transform text-gray-400"
@@ -37,10 +113,8 @@
                                 v-for="player in filteredPlayers"
                                 :key="player.id"
                                 :class="[
-                                    'flex flex-col p-3 rounded-lg border-2 transition-colors duration-200 ease-in-out',
-                                    searchQuery
-                                        ? 'border-red-500 bg-gray-700'
-                                        : 'border-transparent bg-gray-700 hover:border-red-500',
+                                    'flex flex-col rounded-lg border-2 p-3 transition-colors duration-200 ease-in-out',
+                                    searchQuery ? 'border-red-500 bg-gray-700' : 'border-transparent bg-gray-700 hover:border-red-500',
                                 ]"
                             >
                                 <div class="flex items-center space-x-2">
@@ -57,8 +131,10 @@
                                     </div>
                                     <p class="truncate font-medium">{{ player.name }}</p>
                                 </div>
-                                <p class="sm:ml-1 text-xs text-gray-300">Ping: {{ player.ping }}</p>
-                                <p class="sm:ml-1 text-xs text-gray-300">Health: {{ player.health }}</p>
+                                <p class="text-style">Ping: {{ ping }}</p>
+                                <p class="text-style">Health: {{ health }}</p>
+                                <p class="text-style">Street: {{ street }}</p>
+                                <p class="text-style">Discord Id: {{ player.discordId }}</p>
                                 <span v-if="searchQuery" class="ml-auto text-yellow-300">
                                     <svg
                                         xmlns="http://www.w3.org/2000/svg"
@@ -84,54 +160,8 @@
     </div>
 </template>
 
-<script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { useEvents } from '@Composables/useEvents';
-
-const Events = useEvents();
-
-const playerDetails = ref<{ id: number; name: string; health: number; ping: number; }[]>([]);
-const searchQuery = ref<string>('');
-
-Events.on('adminpanel:getUsers', (details: { id: number; name: string; health: number; ping: number; }[]) => {
-    playerDetails.value = details;
-});
-
-function closeAdminpanelUsers() {
-    Events.emitServer('adminpanel:closeUsers');
+<style>
+.text-style {
+    @apply text-xs text-gray-200 sm:ml-1
 }
-
-onMounted(() => {
-    Events.onKeyUp('adminpanel:users', 27, closeAdminpanelUsers);
-});
-
-onUnmounted(() => {
-    Events.offKeyUp('adminpanel:users');
-});
-
-const filteredPlayers = computed(() => {
-    if (!searchQuery.value) return playerDetails.value;
-    const lowercaseQuery = searchQuery.value.toLowerCase();
-    return playerDetails.value
-        .map((player) => ({
-            ...player,
-            highlighted:
-                player.name.toLowerCase().includes(lowercaseQuery) || player.id.toString().includes(lowercaseQuery),
-        }))
-        .filter((player) => player.highlighted);
-});
-
-const searchResultMessage = computed(() => {
-    if (!searchQuery.value) return '';
-    const count = filteredPlayers.value.length;
-    return count > 0 ? `${count} user${count > 1 ? 's' : ''} found` : 'No users found';
-});
-
-const searchResultClass = computed(() => {
-    if (!searchQuery.value) return '';
-    return filteredPlayers.value.length > 0 ? 'bg-green-500' : 'bg-yellow-500';
-});
-
-</script>
-
-<style></style>
+</style>

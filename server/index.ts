@@ -1,17 +1,22 @@
 import * as alt from 'alt-server';
 import { useRebar } from '@Server/index.js';
-import { adminpanelConfig } from '../shared/config.js';
-    
+import { adminpanelConfig } from '@Plugins/rebar-adminpanel/shared/config.js';
+import { adminPanelEvents } from '@Plugins/rebar-adminpanel/shared/events.js';
+
 const Rebar = useRebar();
 const getter = Rebar.get.usePlayersGetter();
 const Keybinder = Rebar.useKeybinder();
+
+if (adminpanelConfig.Settings.debug) {
+    alt.log('[rebar-adminpanel] Debug Mode is activated for the plugin.')
+}
 
 async function adminpanelShow(player: alt.Player) {
     // useWebview(player).show('Adminpanel', 'page', true);
     const character = Rebar.document.character.useCharacter(player);
     const isMember = character.groups.memberOf('admin');
 
-    if (isMember || adminpanelConfig.adminMode === true) {
+    if (isMember || adminpanelConfig.Settings.adminMode) {
         const view = Rebar.player.useWebview(player);
         Rebar.player.useWorld(player).disableControls();
         view.show('Adminpanel', 'page');
@@ -44,10 +49,9 @@ async function adminpanelShowAllUsers(player: alt.Player) {
     const playerDetails = playersOnline.map((p) => ({
         id: p.id,
         name: p.name,
-        health: p.health,
-        ping: p.ping,
-    })); // player.id and player.name
-    view.emit('adminpanel:getUsers', playerDetails);
+        discordId: p.discordID,
+    }));
+    view.emit(adminPanelEvents.WebView.getUsers, playerDetails);
 }
 
 async function adminpanelHideUser(player: alt.Player) {
@@ -56,7 +60,7 @@ async function adminpanelHideUser(player: alt.Player) {
     Rebar.player.useWorld(player).enableControls();
 }
 
-alt.onRpc('adminpanel:giveadmin', async (player: alt.Player) => {
+alt.onRpc(adminPanelEvents.RPC.giveAdmin, async (player: alt.Player) => {
     try {
         alt.log(`${player.name} called adminpanel:giveadmin rpc`);
         await makeAdmin(player);
@@ -65,7 +69,7 @@ alt.onRpc('adminpanel:giveadmin', async (player: alt.Player) => {
     }
 });
 
-alt.onRpc('adminpanel:towaypoint', async (player: alt.Player, x: number, y: number, z: number) => {
+alt.onRpc(adminPanelEvents.RPC.toWaypoint, async (player: alt.Player, x: number, y: number, z: number) => {
     try {
         alt.log(`${player.name} called adminpanel:towaypoint rpc with coords: ${x}, ${y}, ${z}`);
 
@@ -80,15 +84,15 @@ alt.onRpc('adminpanel:towaypoint', async (player: alt.Player, x: number, y: numb
     }
 });
 
-alt.onRpc('adminpanel:showAllUsers', async (player: alt.Player) => {
+alt.onRpc(adminPanelEvents.RPC.showAllUsers, async (player: alt.Player) => {
     await adminpanelShowAllUsers(player);
 });
 
-alt.onClient('adminpanel:close', async (player: alt.Player) => {
+alt.onClient(adminPanelEvents.ToServer.closePanel, async (player: alt.Player) => {
     await adminpanelHide(player);
 });
 
-alt.onClient('adminpanel:closeUsers', async (player: alt.Player) => {
+alt.onClient(adminPanelEvents.ToServer.closeUsers, async (player: alt.Player) => {
     await adminpanelHideUser(player);
     await adminpanelShow(player);
 });
@@ -97,9 +101,8 @@ alt.once('playerSpawn', async () => {
     await showView();
 });
 
-const F4_KEY = 115;
 async function showView() {
-    Keybinder.on(F4_KEY, (player) => {
+    Keybinder.on(adminPanelEvents.KeyCodes.f4, (player) => {
         adminpanelShow(player);
     });
-}
+};

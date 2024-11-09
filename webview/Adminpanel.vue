@@ -1,3 +1,42 @@
+<script lang="ts" setup>
+import { ref, onUnmounted, onMounted } from 'vue';
+import { useEvents } from '@Composables/useEvents';
+import { adminPanelEvents } from '@Plugins/rebar-adminpanel/shared/events.js';
+
+const Events = useEvents();
+
+const coordinatesInput = ref<string>('');
+
+async function showUsers() {
+    await Events.emitServerRpc(adminPanelEvents.RPC.showAllUsers);
+}
+
+async function giveAdmin() {
+    await Events.emitServerRpc(adminPanelEvents.RPC.giveAdmin);
+}
+
+async function toWaypoint() {
+    const coords = coordinatesInput.value.split(',').map(Number);
+    if (coords.length === 3 && coords.every((num) => !isNaN(num))) {
+        await Events.emitServerRpc(adminPanelEvents.RPC.toWaypoint, ...coords);
+    } else {
+        return;
+    }
+}
+
+function closeAdminpanel() {
+    Events.emitServer(adminPanelEvents.ToServer.closePanel);
+}
+
+onMounted(() => {
+    Events.onKeyUp(adminPanelEvents.WebView.closeAdminpanelCallback, 27, closeAdminpanel);
+});
+
+onUnmounted(() => {
+    Events.offKeyUp(adminPanelEvents.WebView.closeAdminpanelCallback);
+});
+</script>
+
 <template>
     <div class="fixed right-5 top-1/2 -translate-y-1/2 transform">
         <div
@@ -38,44 +77,6 @@
         </div>
     </div>
 </template>
-
-<script lang="ts" setup>
-import { ref, onUnmounted, onMounted } from 'vue';
-import { useEvents } from '@Composables/useEvents';
-
-const Events = useEvents();
-
-const coordinatesInput = ref<string>('');
-
-async function showUsers() {
-    await Events.emitServerRpc('adminpanel:showAllUsers');
-}
-
-async function giveAdmin() {
-    await Events.emitServerRpc('adminpanel:giveadmin');
-}
-
-async function toWaypoint() {
-    const coords = coordinatesInput.value.split(',').map(Number);
-    if (coords.length === 3 && coords.every((num) => !isNaN(num))) {
-        await Events.emitServerRpc('adminpanel:towaypoint', ...coords);
-    } else {
-        return;
-    }
-}
-
-function closeAdminpanel() {
-    Events.emitServer('adminpanel:close');
-}
-
-onMounted(() => {
-    Events.onKeyUp('adminpanel', 27, closeAdminpanel);
-});
-
-onUnmounted(() => {
-    Events.offKeyUp('adminpanel');
-});
-</script>
 
 <style>
 @keyframes gradient {
