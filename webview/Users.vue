@@ -1,57 +1,37 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useEvents } from '@Composables/useEvents';
 import { usePlayerStats } from '@Composables/usePlayerStats';
-import { adminPanelEvents } from '@Plugins/rebar-adminpanel/shared/events.js';
-
-const {
-        armour,
-        engineOn,
-        fps,
-        gear,
-        headlights,
-        health,
-        highbeams,
-        indicatorLights,
-        inVehicle,
-        inWater,
-        isAiming,
-        isFlying,
-        isTalking,
-        locked,
-        maxGear,
-        ping,
-        seat,
-        speed,
-        stamina,
-        street,
-        time,
-        vehicleHealth,
-        weapon,
-        weather,
-        zone,
-    } = usePlayerStats();
+import { adminpanelEvents } from '@Plugins/rebar-adminpanel/shared/events.js';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 
 const Events = useEvents();
+
+const {
+    health,
+    stamina,
+    ping,
+    street
+} = usePlayerStats();
 
 const playerDetails = ref<{ id: string; name: string; discordId: number; }[]>([]);
 const searchQuery = ref<string>('');
 
-Events.on(adminPanelEvents.WebView.getUsers, (details: { id: string; name: string; discordId: number; ip: string }[]) => {
+Events.on(adminpanelEvents.webview.getUsers, (details: { id: string; name: string; discordId: number; ip: string }[]) => {
     playerDetails.value = details;
 });
 
-function closeAdminpanelUsers() {
-    Events.emitServer(adminPanelEvents.ToServer.closeUsers);
+const closePanel = function() {
+    Events.emitServer(adminpanelEvents.toServer.closeUsers);
 }
 
 onMounted(() => {
-    Events.onKeyUp(adminPanelEvents.WebView.closeUserpanelCallback, adminPanelEvents.KeyCodes.escape, closeAdminpanelUsers);
+    Events.onKeyUp(adminpanelEvents.webview.closeUserpanelCallback, adminpanelEvents.bindings.ESC, closePanel);
 });
 
 onUnmounted(() => {
-    Events.offKeyUp(adminPanelEvents.WebView.closeUserpanelCallback);
+    Events.offKeyUp(adminpanelEvents.webview.closeUserpanelCallback);
 });
+
 
 const filteredPlayers = computed(() => {
     if (!searchQuery.value) return playerDetails.value;
@@ -78,7 +58,8 @@ const searchResultClass = computed(() => {
 
 <template>
     <div class="flex h-screen w-screen items-center justify-center p-4">
-        <div class="h-[50%] w-1/2 max-w-4xl rounded-lg border-2 border-solid border-red-500 bg-gray-800 text-white shadow-2xl">
+        <div
+            class="h-[50%] w-1/2 max-w-4xl rounded-lg border-2 border-solid border-red-500 intense-glow-border bg-gray-800 text-white shadow-2xl">
             <div class="flex h-full flex-col p-6">
                 <div class="mb-6 flex flex-col items-center justify-between sm:flex-row">
                     <h2 class="mb-4 text-2xl font-bold sm:mb-0">⚙️ User Management</h2>
@@ -133,8 +114,9 @@ const searchResultClass = computed(() => {
                                 </div>
                                 <p class="text-style">Ping: {{ ping }}</p>
                                 <p class="text-style">Health: {{ health }}</p>
+                                <p class="text-style">Stamina: {{ stamina }}</p>
                                 <p class="text-style">Street: {{ street }}</p>
-                                <p class="text-style">Discord Id: {{ player.discordId }}</p>
+                                <p class="text-style">Discord ID: {{ player.discordId }}</p>
                                 <span v-if="searchQuery" class="ml-auto text-yellow-300">
                                     <svg
                                         xmlns="http://www.w3.org/2000/svg"
@@ -160,8 +142,16 @@ const searchResultClass = computed(() => {
     </div>
 </template>
 
-<style>
+<style scoped>
 .text-style {
     @apply text-xs text-gray-200 sm:ml-1
 }
+
+.intense-glow-border {
+    box-shadow:
+        0 0 5px #ef4444,
+        0 0 10px #ef4444,
+        0 0 15px #ef4444;
+}
+
 </style>

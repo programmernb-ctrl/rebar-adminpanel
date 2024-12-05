@@ -1,24 +1,32 @@
 import * as alt from 'alt-server';
 import { useRebar } from '@Server/index.js';
 import { adminpanelConfig } from '@Plugins/rebar-adminpanel/shared/config.js';
-import { adminPanelEvents } from '@Plugins/rebar-adminpanel/shared/events.js';
+import { adminpanelEvents } from '@Plugins/rebar-adminpanel/shared/events.js';
 
 const Rebar = useRebar();
+
 const getter = Rebar.get.usePlayersGetter();
-const Keybinder = Rebar.useKeybinder();
+const worldGetter = Rebar.get.useWorldGetter();
+const keyBinding = Rebar.useKeybinder();
 
 if (adminpanelConfig.Settings.debug) {
-    alt.log('[rebar-adminpanel] Debug Mode is activated for the plugin.')
+    alt.logWarning('[rebar-adminpanel] Debug Mode is still activated. Consider disable it to prevent unwanted' +
+        ' behaviour')
 }
 
+/**
+ * Checks if the player is a member of the 'admin' group, if true continue with showing the webview
+ * @param player to show the webview to | alt.Player
+ */
 async function adminpanelShow(player: alt.Player) {
-    // useWebview(player).show('Adminpanel', 'page', true);
     const character = Rebar.document.character.useCharacter(player);
     const isMember = character.groups.memberOf('admin');
+    // const hasPermission = Rebar.permissions.usePermissions(player).hasPermission('adminpanel');
 
     if (isMember || adminpanelConfig.Settings.adminMode) {
         const view = Rebar.player.useWebview(player);
         Rebar.player.useWorld(player).disableControls();
+        Rebar.player.useAudio(player).playFrontendSound('Click_Special', 'WEB_NAVIGATION_SOUNDS_PHONE');
         view.show('Adminpanel', 'page');
     } else {
         return;
@@ -28,21 +36,29 @@ async function adminpanelShow(player: alt.Player) {
 async function adminpanelHide(player: alt.Player) {
     const view = Rebar.player.useWebview(player);
     view.hide('Adminpanel');
+    Rebar.player.useAudio(player).playFrontendSound('Click_Fail', 'WEB_NAVIGATION_SOUNDS_PHONE');
     Rebar.player.useWorld(player).enableControls();
 }
 
-async function makeAdmin(player: alt.Player) {
-    const rPlayer = Rebar.usePlayer(player);
+async function getAdmin(player: alt.Player) {
+    const character = Rebar.document.character.useCharacter(player);
+    const hasGroup = character.groups.memberOf('admin');
 
-    rPlayer.character.groups.add('admin');
-    rPlayer.account.permissions.grant('admin');
+    if (!hasGroup) {
+        alt.log('[rebar-adminpanel] The admin group is now being added to your character!');
+        await character.groups.add('admin');
+    } else {
+        alt.logWarning('[rebar-adminpanel] No need to get it again... You already got the admin group.');
+        return;
+    }
 }
 
 async function adminpanelShowAllUsers(player: alt.Player) {
-    // useWebview(player).show('Adminpanel', 'page', true);
     const playersOnline = getter.online();
     const view = Rebar.player.useWebview(player);
+
     Rebar.player.useWorld(player).disableControls();
+    Rebar.player.useAudio(player).playFrontendSound('Click_Special', 'WEB_NAVIGATION_SOUNDS_PHONE');
 
     view.show('Users', 'persistent');
 
@@ -51,58 +67,62 @@ async function adminpanelShowAllUsers(player: alt.Player) {
         name: p.name,
         discordId: p.discordID,
     }));
-    view.emit(adminPanelEvents.WebView.getUsers, playerDetails);
+
+    view.emit(adminpanelEvents.webview.getUsers, playerDetails);
 }
 
 async function adminpanelHideUser(player: alt.Player) {
     const view = Rebar.player.useWebview(player);
+
     view.hide('Users');
+    Rebar.player.useAudio(player).playFrontendSound('Click_Fail', 'WEB_NAVIGATION_SOUNDS_PHONE');
     Rebar.player.useWorld(player).enableControls();
 }
 
-alt.onRpc(adminPanelEvents.RPC.giveAdmin, async (player: alt.Player) => {
+alt.onRpc(adminpanelEvents.rpc.giveAdmin, async (player: alt.Player) => {
     try {
         alt.log(`${player.name} called adminpanel:giveadmin rpc`);
-        await makeAdmin(player);
+        await getAdmin(player);
     } catch (error) {
-        alt.log(`${player.name} called adminpanel rpc but got an error ${error}`);
+        alt.log(`${player.name} called adminpanel:giveadmin rpc but with an error ${error}`);
     }
 });
 
-alt.onRpc(adminPanelEvents.RPC.toWaypoint, async (player: alt.Player, x: number, y: number, z: number) => {
+alt.onRpc(adminpanelEvents.rpc.toWaypoint, async (player: alt.Player, x: number, y: number, z: number) => {
+    const isClear = await worldGetter.positionIsClear(new alt.Vector3(x, y, z), 'all');
+
     try {
         alt.log(`${player.name} called adminpanel:towaypoint rpc with coords: ${x}, ${y}, ${z}`);
 
-        if (player && player.valid) {
+        if (player && player.valid && isClear) {
             player.pos = new alt.Vector3(x, y, z); // Teleport the player
-            alt.log(`${player.name} has been teleported to coordinates`);
         } else {
-            alt.log(`Invalid player attempted to teleport: ${player.name}`);
+            alt.log(`Invalid player attempted to teleport: ${player.name} or new position is not clear.`);
         }
-    } catch (error) {
-        alt.log(`${player.name} encountered an error: ${error}`);
+    } catch (err) {
+        alt.log(`${player.name} encountered an error with adminpanel:towaypoint rpc: ${err}`);
     }
 });
 
-alt.onRpc(adminPanelEvents.RPC.showAllUsers, async (player: alt.Player) => {
+alt.onRpc(adminpanelEvents.rpc.showAllUsers, async (player: alt.Player) => {
     await adminpanelShowAllUsers(player);
 });
 
-alt.onClient(adminPanelEvents.ToServer.closePanel, async (player: alt.Player) => {
+alt.onClient(adminpanelEvents.toServer.closePanel, async (player: alt.Player) => {
     await adminpanelHide(player);
 });
 
-alt.onClient(adminPanelEvents.ToServer.closeUsers, async (player: alt.Player) => {
+alt.onClient(adminpanelEvents.toServer.closeUsers, async (player: alt.Player) => {
     await adminpanelHideUser(player);
     await adminpanelShow(player);
 });
 
-alt.once('playerSpawn', async () => {
-    await showView();
+alt.once('playerConnect', async (player: alt.Player) => {
+    await showView(player);
 });
 
-async function showView() {
-    Keybinder.on(adminPanelEvents.KeyCodes.f4, (player) => {
+async function showView(player: alt.Player) {
+    keyBinding.on(adminpanelEvents.bindings.F4, () => {
         adminpanelShow(player);
     });
-};
+}

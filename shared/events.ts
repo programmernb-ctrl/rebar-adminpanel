@@ -1,21 +1,22 @@
-export const adminPanelEvents = {
-   ToServer: {
+export const adminpanelEvents = {
+   toClient: {},
+   toServer: {
       closePanel: 'adminpanel:close',
       closeUsers: 'adminpanel:closeUsers',
    },
-   WebView: {
+   webview: {
       closeAdminpanelCallback: 'adminpanel',
       closeUserpanelCallback: 'adminpanel:users',
       getUsers: 'adminpanel:getUsers',
 
    },
-   RPC: {
+   rpc: {
       showAllUsers: 'adminpanel:showAllUsers',
       giveAdmin: 'adminpanel:giveadmin',
       toWaypoint: 'adminpanel:towaypoint',
    },
-   KeyCodes: {
-      escape: 27,
-      f4: 115,
+   bindings: {
+      ESC: 27,
+      F4: 115,
    }
 };
