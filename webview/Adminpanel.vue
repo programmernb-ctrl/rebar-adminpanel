@@ -16,9 +16,12 @@ async function giveAdmin() {
 }
 
 async function toWaypoint() {
+    const coordsInput = coordinatesInput.value.trim();
     const coords = coordinatesInput.value.split(',').map(Number);
     if (coords.length === 3 && coords.every((num) => !isNaN(num))) {
         await Events.emitServerRpc(adminpanelEvents.rpc.toWaypoint, ...coords);
+    } else if (coordsInput === "") {
+        Events.emitServer(adminpanelEvents.toServer.tpMarker);
     } else {
         return;
     }
