@@ -3,6 +3,7 @@ export const adminpanelEvents = {
    toServer: {
       closePanel: 'adminpanel:close',
       closeUsers: 'adminpanel:closeUsers',
+      tpMarker: 'adminpanel:teleport:marker:hud',
    },
    webview: {
       closeAdminpanelCallback: 'adminpanel',
