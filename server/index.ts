@@ -79,6 +79,48 @@ async function adminpanelHideUser(player: alt.Player) {
     Rebar.player.useWorld(player).enableControls();
 }
 
+async function adminpanelTpMarker(player: alt.Player) {
+    if (!player?.valid) return;
+
+    const rPlayer = Rebar.usePlayer(player);
+    const waypoint = await Rebar.usePlayer(player).waypoint.get()
+
+    if (!waypoint) {
+        return;
+    }
+
+    rPlayer.native.invokeMany([
+        { native: 'setFocusPosAndVel', args: [waypoint.x, waypoint.y, waypoint.z, 0, 0, 0] },
+        { native: 'requestCollisionAtCoord', args: [waypoint.x, waypoint.y, waypoint.z] }
+    ])
+
+    alt.Utils.wait(1000);
+
+    player.pos = new alt.Vector3(waypoint);
+
+    const interval = alt.setInterval(async () => {
+        const groundZResponse = await rPlayer.native.invokeWithResult('getGroundZFor3dCoord', waypoint.x, waypoint.y, waypoint.z, 1000, false, false);
+
+        if (groundZResponse[0] === true && typeof groundZResponse[1] === 'number') {
+            const groundZ = groundZResponse[1];
+
+            if (groundZ === 0) {
+                alt.clearInterval(interval);
+                return;
+            }
+
+            player.pos = new alt.Vector3(waypoint.x, waypoint.y, groundZ);
+
+            rPlayer.notify.showNotification('Teleported successfully');
+        } else {
+            alt.clearInterval(interval);
+
+            rPlayer.notify.showNotification('Teleport not successfully');
+            return;
+        }
+    }, 500);
+}
+
 alt.onRpc(adminpanelEvents.rpc.giveAdmin, async (player: alt.Player) => {
     try {
         alt.log(`${player.name} called adminpanel:giveadmin rpc`);
@@ -116,6 +158,10 @@ alt.onClient(adminpanelEvents.toServer.closeUsers, async (player: alt.Player) =>
     await adminpanelHideUser(player);
     await adminpanelShow(player);
 });
+
+alt.onClient(adminpanelEvents.toServer.tpMarker, async (player: alt.Player) => {
+    await adminpanelTpMarker(player);
+})
 
 alt.once('playerConnect', async (player: alt.Player) => {
     await showView(player);
