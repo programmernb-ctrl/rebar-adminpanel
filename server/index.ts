@@ -9,6 +9,10 @@ const getter = Rebar.get.usePlayersGetter();
 const worldGetter = Rebar.get.useWorldGetter();
 const keyBinding = Rebar.useKeybinder();
 
+const syncedBinder = Rebar.systems.useStreamSyncedBinder();
+syncedBinder.syncCharacterKey('cash');
+syncedBinder.syncCharacterKey('bank');
+
 if (adminpanelConfig.Settings.debug) {
     alt.logWarning('[rebar-adminpanel] Debug Mode is still activated. Consider disable it to prevent unwanted' +
         ' behaviour')
@@ -79,6 +83,10 @@ async function adminpanelHideUser(player: alt.Player) {
     Rebar.player.useWorld(player).enableControls();
 }
 
+/**
+ * Gets the waypoint set by the player and then teleports them to the new position
+ * @param player the player to teleport to the marker
+ */
 async function adminpanelTpMarker(player: alt.Player) {
     if (!player?.valid) return;
 
@@ -88,15 +96,6 @@ async function adminpanelTpMarker(player: alt.Player) {
     if (!waypoint) {
         return;
     }
-
-    rPlayer.native.invokeMany([
-        { native: 'setFocusPosAndVel', args: [waypoint.x, waypoint.y, waypoint.z, 0, 0, 0] },
-        { native: 'requestCollisionAtCoord', args: [waypoint.x, waypoint.y, waypoint.z] }
-    ])
-
-    alt.Utils.wait(1000);
-
-    player.pos = new alt.Vector3(waypoint);
 
     const interval = alt.setInterval(async () => {
         const groundZResponse = await rPlayer.native.invokeWithResult('getGroundZFor3dCoord', waypoint.x, waypoint.y, waypoint.z, 1000, false, false);
@@ -109,13 +108,21 @@ async function adminpanelTpMarker(player: alt.Player) {
                 return;
             }
 
-            player.pos = new alt.Vector3(waypoint.x, waypoint.y, groundZ);
+            alt.clearInterval(interval);
+
+            rPlayer.native.invoke('setFocusPosAndVel', waypoint.x, waypoint.y, groundZ, 0.0, 0.0, 0.0);
+            rPlayer.native.invoke('requestCollisionAtCoord', waypoint.x, waypoint.y, groundZ);
+
+            const nextTick = alt.nextTick(async () => {
+                player.frozen = true;
+                player.pos = new alt.Vector3(waypoint.x, waypoint.y, groundZ);
+                player.frozen = false;
+                alt.clearNextTick(nextTick);
+            })
 
             rPlayer.notify.showNotification('Teleported successfully');
         } else {
             alt.clearInterval(interval);
-
-            rPlayer.notify.showNotification('Teleport not successfully');
             return;
         }
     }, 500);
