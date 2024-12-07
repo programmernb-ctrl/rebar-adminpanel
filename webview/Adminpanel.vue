@@ -1,49 +1,32 @@
 <script lang="ts" setup>
-import { ref, onUnmounted, onMounted } from 'vue';
+import { onUnmounted, onMounted, ref } from 'vue';
 import { useEvents } from '@Composables/useEvents';
+import { useAdminPanel } from '@Plugins/rebar-adminpanel/webview/composables/useAdminPanel.js';
 import { adminpanelEvents } from '@Plugins/rebar-adminpanel/shared/events.js';
 
-const Events = useEvents();
+const events = useEvents();
 
-const coordinatesInput = ref<string>('');
-
-async function showUsers() {
-    await Events.emitServerRpc(adminpanelEvents.rpc.showAllUsers);
-}
-
-async function giveAdmin() {
-    await Events.emitServerRpc(adminpanelEvents.rpc.giveAdmin);
-}
-
-async function toWaypoint() {
-    const coordsInput = coordinatesInput.value.trim();
-    const coords = coordinatesInput.value.split(',').map(Number);
-    if (coords.length === 3 && coords.every((num) => !isNaN(num))) {
-        await Events.emitServerRpc(adminpanelEvents.rpc.toWaypoint, ...coords);
-    } else if (coordsInput === "") {
-        Events.emitServer(adminpanelEvents.toServer.tpMarker);
-    } else {
-        return;
-    }
-}
-
-function closeAdminpanel() {
-    Events.emitServer(adminpanelEvents.toServer.closePanel);
-}
+const {
+    coordinatesInput,
+    showUsers,
+    giveAdmin,
+    toWaypoint,
+    closePanel
+} = useAdminPanel();
 
 onMounted(() => {
-    Events.onKeyUp(adminpanelEvents.webview.closeAdminpanelCallback, adminpanelEvents.bindings.ESC, closeAdminpanel);
+    events.onKeyUp(adminpanelEvents.webview.closeAdminpanelCallback, adminpanelEvents.bindings.ESC, closePanel);
 });
 
 onUnmounted(() => {
-    Events.offKeyUp(adminpanelEvents.webview.closeAdminpanelCallback);
+    events.offKeyUp(adminpanelEvents.webview.closeAdminpanelCallback);
 });
 </script>
 
 <template>
     <div class="fixed right-5 top-1/2 -translate-y-1/2 transform">
         <div
-            class="min-h-72 w-72 overflow-hidden rounded-lg border-2 border-solid border-red-400 intense-glow-border bg-gradient-to-br from-gray-900 to-gray-800 shadow-2xl"
+            class="min-h-72 w-72 overflow-hidden rounded-lg border-2 border-solid border-red-500 intense-glow-border bg-gradient-to-br from-gray-900 to-gray-800 shadow-2xl"
         >
             <div class="relative mb-4">
                 <img
