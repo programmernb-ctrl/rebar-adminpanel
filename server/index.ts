@@ -98,34 +98,31 @@ async function adminpanelTpMarker(player: alt.Player) {
     }
 
     const interval = alt.setInterval(async () => {
+        rPlayer.native.invoke('setFocusPosAndVel', waypoint.x, waypoint.y, waypoint.z, 0.0, 0.0, 0.0);
+
         const groundZResponse = await rPlayer.native.invokeWithResult('getGroundZFor3dCoord', waypoint.x, waypoint.y, waypoint.z, 1000, false, false);
 
         if (groundZResponse[0] === true && typeof groundZResponse[1] === 'number') {
             const groundZ = groundZResponse[1];
 
-            if (groundZ === 0) {
-                alt.clearInterval(interval);
-                return;
-            }
-
             alt.clearInterval(interval);
 
-            rPlayer.native.invoke('setFocusPosAndVel', waypoint.x, waypoint.y, groundZ, 0.0, 0.0, 0.0);
             rPlayer.native.invoke('requestCollisionAtCoord', waypoint.x, waypoint.y, groundZ);
 
             const nextTick = alt.nextTick(async () => {
                 player.frozen = true;
+                rPlayer.native.invoke('clearFocus');
                 player.pos = new alt.Vector3(waypoint.x, waypoint.y, groundZ);
                 player.frozen = false;
+                rPlayer.notify.showNotification('Teleported successfully');
                 alt.clearNextTick(nextTick);
             })
-
-            rPlayer.notify.showNotification('Teleported successfully');
         } else {
             alt.clearInterval(interval);
+            rPlayer.native.invoke('clearFocus');
             return;
         }
-    }, 500);
+    }, 1000);
 }
 
 alt.onRpc(adminpanelEvents.rpc.giveAdmin, async (player: alt.Player) => {
