@@ -51,8 +51,7 @@ cd path/to/your/rebar-altv/src/plugins/rebar-adminpanel
 git pull
 ```
 
-- If you forked this repo and want to update it, simply search for `merge from upstream` on [Google](https://www.google.
-  com)
+- If you forked this repo and want to update it, simply search for `merge from upstream` on [Google](https://www.google.com)
 
 ## Dependencies
 
