@@ -1,21 +1,25 @@
 <script lang="ts" setup>
-import { onUnmounted, onMounted, ref } from 'vue';
+import { onUnmounted, onMounted } from 'vue';
 import { useEvents } from '@Composables/useEvents';
-import { useAdminPanel } from '@Plugins/rebar-adminpanel/webview/composables/useAdminPanel.js';
 import { adminpanelEvents } from '@Plugins/rebar-adminpanel/shared/events.js';
-
-const events = useEvents();
+import { useAdminPanel } from './composables/useAdminPanel';
 
 const {
     coordinatesInput,
     showUsers,
+    closePanel,
     giveAdmin,
-    toWaypoint,
-    closePanel
+    toWaypoint
 } = useAdminPanel();
 
+const events = useEvents();
+
 onMounted(() => {
-    events.onKeyUp(adminpanelEvents.webview.closeAdminpanelCallback, adminpanelEvents.bindings.ESC, closePanel);
+    events.onKeyUp(
+        adminpanelEvents.webview.closeAdminpanelCallback, // identifier
+        adminpanelEvents.bindings.ESC, // keybinding
+        closePanel, // callback
+    );
 });
 
 onUnmounted(() => {
@@ -26,7 +30,7 @@ onUnmounted(() => {
 <template>
     <div class="fixed right-5 top-1/2 -translate-y-1/2 transform">
         <div
-            class="min-h-72 w-72 overflow-hidden rounded-lg border-2 border-solid border-red-500 intense-glow-border bg-gradient-to-br from-gray-900 to-gray-800 shadow-2xl"
+            class="intense-glow-border min-h-72 w-72 overflow-hidden rounded-lg border-2 border-solid border-red-500 bg-gradient-to-br from-gray-900 to-gray-800 shadow-2xl"
         >
             <div class="relative mb-4">
                 <img
@@ -90,7 +94,7 @@ onUnmounted(() => {
 }
 
 .menu-text {
-    @apply text-justify h-8 w-full rounded-lg text-sm text-white hover:animate-pulse hover:border-2
-    hover:border-red-500 hover:bg-transparent
+    @apply h-8 w-full rounded-lg text-justify text-sm text-white hover:animate-pulse hover:border-2
+    hover:border-red-500 hover:bg-transparent;
 }
 </style>

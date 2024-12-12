@@ -4,18 +4,25 @@ import { adminpanelConfig } from '@Plugins/rebar-adminpanel/shared/config.js';
 import { adminpanelEvents } from '@Plugins/rebar-adminpanel/shared/events.js';
 
 const Rebar = useRebar();
-
+const keyBinding = Rebar.useKeybinder();
 const getter = Rebar.get.usePlayersGetter();
 const worldGetter = Rebar.get.useWorldGetter();
-const keyBinding = Rebar.useKeybinder();
 
 const syncedBinder = Rebar.systems.useStreamSyncedBinder();
 syncedBinder.syncCharacterKey('cash');
 syncedBinder.syncCharacterKey('bank');
 
 if (adminpanelConfig.Settings.debug) {
-    alt.logWarning('[rebar-adminpanel] Debug Mode is still activated. Consider disable it to prevent unwanted' +
-        ' behaviour')
+    alt.logWarning(
+        '[rebar-adminpanel] Debug Mode is still activated. Consider disable it to prevent unwanted' + ' behaviour',
+    );
+}
+
+let keybinding = undefined;
+async function showView(player: alt.Player) {
+    keybinding = keyBinding.on(adminpanelEvents.bindings.F4, () => {
+        adminpanelShow(player);
+    });
 }
 
 /**
@@ -23,6 +30,10 @@ if (adminpanelConfig.Settings.debug) {
  * @param player to show the webview to | alt.Player
  */
 async function adminpanelShow(player: alt.Player) {
+    if (!player?.valid) {
+        return;
+    }
+
     const character = Rebar.document.character.useCharacter(player);
     const isMember = character.groups.memberOf('admin');
     // const hasPermission = Rebar.permissions.usePermissions(player).hasPermission('adminpanel');
@@ -40,6 +51,14 @@ async function adminpanelShow(player: alt.Player) {
 async function adminpanelHide(player: alt.Player) {
     const view = Rebar.player.useWebview(player);
     view.hide('Adminpanel');
+    Rebar.player.useAudio(player).playFrontendSound('Click_Fail', 'WEB_NAVIGATION_SOUNDS_PHONE');
+    Rebar.player.useWorld(player).enableControls();
+}
+
+async function adminpanelHideUser(player: alt.Player) {
+    const view = Rebar.player.useWebview(player);
+
+    view.hide('Users');
     Rebar.player.useAudio(player).playFrontendSound('Click_Fail', 'WEB_NAVIGATION_SOUNDS_PHONE');
     Rebar.player.useWorld(player).enableControls();
 }
@@ -75,14 +94,6 @@ async function adminpanelShowAllUsers(player: alt.Player) {
     view.emit(adminpanelEvents.webview.getUsers, playerDetails);
 }
 
-async function adminpanelHideUser(player: alt.Player) {
-    const view = Rebar.player.useWebview(player);
-
-    view.hide('Users');
-    Rebar.player.useAudio(player).playFrontendSound('Click_Fail', 'WEB_NAVIGATION_SOUNDS_PHONE');
-    Rebar.player.useWorld(player).enableControls();
-}
-
 /**
  * Gets the waypoint set by the player and then teleports them to the new position
  * @param player the player to teleport to the marker
@@ -91,7 +102,7 @@ async function adminpanelTpMarker(player: alt.Player) {
     if (!player?.valid) return;
 
     const rPlayer = Rebar.usePlayer(player);
-    const waypoint = await Rebar.usePlayer(player).waypoint.get()
+    const waypoint = await Rebar.usePlayer(player).waypoint.get();
 
     if (!waypoint) {
         return;
@@ -100,7 +111,15 @@ async function adminpanelTpMarker(player: alt.Player) {
     const interval = alt.setInterval(async () => {
         rPlayer.native.invoke('setFocusPosAndVel', waypoint.x, waypoint.y, waypoint.z, 0.0, 0.0, 0.0);
 
-        const groundZResponse = await rPlayer.native.invokeWithResult('getGroundZFor3dCoord', waypoint.x, waypoint.y, waypoint.z, 1000, false, false);
+        const groundZResponse = await rPlayer.native.invokeWithResult(
+            'getGroundZFor3dCoord',
+            waypoint.x,
+            waypoint.y,
+            waypoint.z,
+            1000,
+            false,
+            false,
+        );
 
         if (groundZResponse[0] === true && typeof groundZResponse[1] === 'number') {
             const groundZ = groundZResponse[1];
@@ -111,12 +130,13 @@ async function adminpanelTpMarker(player: alt.Player) {
 
             const nextTick = alt.nextTick(async () => {
                 player.frozen = true;
+                alt.log(player.dimension);
                 rPlayer.native.invoke('clearFocus');
                 player.pos = new alt.Vector3(waypoint.x, waypoint.y, groundZ);
                 player.frozen = false;
                 rPlayer.notify.showNotification('Teleported successfully');
                 alt.clearNextTick(nextTick);
-            })
+            });
         } else {
             alt.clearInterval(interval);
             rPlayer.native.invoke('clearFocus');
@@ -165,14 +185,12 @@ alt.onClient(adminpanelEvents.toServer.closeUsers, async (player: alt.Player) =>
 
 alt.onClient(adminpanelEvents.toServer.tpMarker, async (player: alt.Player) => {
     await adminpanelTpMarker(player);
-})
+});
 
-alt.once('playerConnect', async (player: alt.Player) => {
+alt.on('playerConnect', async (player: alt.Player) => {
     await showView(player);
 });
 
-async function showView(player: alt.Player) {
-    keyBinding.on(adminpanelEvents.bindings.F4, () => {
-        adminpanelShow(player);
-    });
-}
+alt.on('playerDisconnect', async (player: alt.Player) => {
+    keyBinding.off(adminpanelEvents.bindings.F4, keybinding);
+});

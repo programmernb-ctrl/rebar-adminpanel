@@ -4,12 +4,9 @@ import { adminpanelEvents } from '@Plugins/rebar-adminpanel/shared/events.js';
 
 const events = useEvents();
 
-export function useAdminPanel() {
-    const coordinatesInput = ref<string>('');
+export const useAdminPanel = () => {
 
-    const closePanel = () => {
-        events.emitServer(adminpanelEvents.toServer.closePanel);
-    }
+    let coordinatesInput = ref<string>('');
 
     const showUsers = async () => {
         await events.emitServerRpc(adminpanelEvents.rpc.showAllUsers);
@@ -18,6 +15,10 @@ export function useAdminPanel() {
     const giveAdmin = async () => {
         await events.emitServerRpc(adminpanelEvents.rpc.giveAdmin);
     };
+
+    const closePanel = () => {
+        events.emitServer(adminpanelEvents.toServer.closePanel);
+    }
 
     const toWaypoint = async () => {
         const coordsInput = coordinatesInput.value.trim();
@@ -33,8 +34,8 @@ export function useAdminPanel() {
 
     return {
         coordinatesInput,
-        closePanel,
         showUsers,
+        closePanel,
         giveAdmin,
         toWaypoint,
     }

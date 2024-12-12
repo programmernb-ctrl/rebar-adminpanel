@@ -1,28 +1,22 @@
 # rebar-adminpanel
 
 > [!IMPORTANT]
-> It's required that you go to your Rebar directory
-> and set up some things first before using the rebar-adminpanel plugin
+> Please read all installation steps to prevent unwanted behaviour
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/S6S3171498)
 
 ## Installation
 
-1. Go to your Rebar `main` server's directory and then to `./webview/src/index.css`
-2. Add following code at the end of `index.css`
+1. Go to your Rebar `main` server's directory.
 
-```css
-.neon-button {
-    @apply w-full rounded-lg border-2 border-transparent px-4 py-3 text-left text-sm text-gray-200 hover:animate-pulse hover:border-red-500 hover:bg-opacity-75 hover:shadow-md;
-}
-```
-
-3. Now clone this repository in to your Rebar `main` directory using git commands.
+2. Now clone this repository in to your Rebar `main` directory using git commands.
 
 ```bash
 cd path/to/your/rebar-altv/
 git clone https://github.com/programmernb-ctrl/rebar-adminpanel.git src/plugins/rebar-adminpanel
 ```
 
-4. Should your character don't have the admin group you'll need to customize the config in `./shared/config.ts`
+3. If your character doesn't already have the admin group, you'll need to customize the config in `./shared/config.ts`
 
 ```typescript
 export const adminpanelConfig = {
@@ -30,7 +24,7 @@ export const adminpanelConfig = {
 };
 ```
 
-5. Start the server once by using one of the below commands. The plugin will load __automatically.__
+4. Start the server once by using one of the below commands. The plugin will load __automatically.__
 
 ```
 pnpm start
@@ -57,7 +51,8 @@ cd path/to/your/rebar-altv/src/plugins/rebar-adminpanel
 git pull
 ```
 
-- If you forked this repo and wanna update it, simply search for `merge from upstream` on [Google](https://www.google.com)
+- If you forked this repo and want to update it, simply search for `merge from upstream` on [Google](https://www.google.
+  com)
 
 ## Dependencies
 

@@ -10,16 +10,12 @@ export function useUserSearch() {
 
     const characterData = syncedMeta.getCharacter();
 
-    const playerDetails = ref<{id : string; name: string; discordId: number; }[]>([]);
+    const playerDetails = ref<{ id: string; name: string; discordId: number; }[]>([]);
     const searchQuery = ref<string>('');
 
     const getPlayerDetails = (details: { id: string; name: string; discordId: number; }[]) => {
         playerDetails.value = details;
     }
-
-    const closePanel = () => {
-        events.emitServer(adminpanelEvents.toServer.closeUsers);
-    };
 
     const filteredPlayers = computed(() => {
         if (!searchQuery.value) return playerDetails.value;
@@ -43,6 +39,11 @@ export function useUserSearch() {
         return filteredPlayers.value.length > 0 ? 'bg-green-500' : 'bg-yellow-500';
     })
 
+    const closePanel = () => {
+        events.emitServer(adminpanelEvents.toServer.closeUsers);
+    };
+
+
     return {
         closePanel,
         characterData,
@@ -52,5 +53,4 @@ export function useUserSearch() {
         searchResult,
         searchResultClass,
     }
-
 }

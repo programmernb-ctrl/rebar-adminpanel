@@ -136,5 +136,4 @@ onUnmounted(() => {
         0 0 10px #ef4444,
         0 0 15px #ef4444;
 }
-
 </style>
