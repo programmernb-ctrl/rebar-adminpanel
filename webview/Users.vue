@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { onMounted, onUnmounted } from 'vue';
 import { useEvents } from '@Composables/useEvents';
 import { usePlayerStats } from '@Composables/usePlayerStats';
+import { useUserSearch } from '@Plugins/rebar-adminpanel/webview/composables/useUserSearch.js';
 import { adminpanelEvents } from '@Plugins/rebar-adminpanel/shared/events.js';
-import { ref, computed, onMounted, onUnmounted } from 'vue';
 
 const Events = useEvents();
 
@@ -13,16 +14,19 @@ const {
     street
 } = usePlayerStats();
 
-const playerDetails = ref<{ id: string; name: string; discordId: number; }[]>([]);
-const searchQuery = ref<string>('');
+const {
+    characterData,
+    playerDetails,
+    filteredPlayers,
+    searchQuery,
+    searchResult,
+    searchResultClass,
+    closePanel
+} = useUserSearch();
 
-Events.on(adminpanelEvents.webview.getUsers, (details: { id: string; name: string; discordId: number; ip: string }[]) => {
+Events.on(adminpanelEvents.webview.getUsers, (details: { id: string; name: string; discordId: number }[]) => {
     playerDetails.value = details;
 });
-
-const closePanel = function() {
-    Events.emitServer(adminpanelEvents.toServer.closeUsers);
-}
 
 onMounted(() => {
     Events.onKeyUp(adminpanelEvents.webview.closeUserpanelCallback, adminpanelEvents.bindings.ESC, closePanel);
@@ -30,29 +34,6 @@ onMounted(() => {
 
 onUnmounted(() => {
     Events.offKeyUp(adminpanelEvents.webview.closeUserpanelCallback);
-});
-
-
-const filteredPlayers = computed(() => {
-    if (!searchQuery.value) return playerDetails.value;
-    const lowercaseQuery = searchQuery.value.toLowerCase();
-    return playerDetails.value
-        .map((player) => ({
-            ...player,
-            highlighted: player.name.toLowerCase().includes(lowercaseQuery) || player.id.toString().includes(lowercaseQuery),
-        }))
-        .filter((player) => player.highlighted);
-});
-
-const searchResultMessage = computed(() => {
-    if (!searchQuery.value) return '';
-    const count = filteredPlayers.value.length;
-    return count > 0 ? `${count} user${count > 1 ? 's' : ''} found` : 'No users found';
-});
-
-const searchResultClass = computed(() => {
-    if (!searchQuery.value) return '';
-    return filteredPlayers.value.length > 0 ? 'bg-green-500' : 'bg-yellow-500';
 });
 </script>
 
@@ -86,7 +67,7 @@ const searchResultClass = computed(() => {
                 </div>
                 <div class="flex flex-grow flex-col overflow-hidden">
                     <div v-if="searchQuery" class="mb-2 rounded-md p-2 text-sm font-medium" :class="searchResultClass">
-                        {{ searchResultMessage }}
+                        {{ searchResult }}
                     </div>
                     <div class="flex-grow overflow-y-auto rounded-md border border-gray-700">
                         <div class="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -115,6 +96,8 @@ const searchResultClass = computed(() => {
                                 <p class="text-style">Ping: {{ ping }}</p>
                                 <p class="text-style">Health: {{ health }}</p>
                                 <p class="text-style">Stamina: {{ stamina }}</p>
+                                <p class="text-style">Bank: {{ '$' + characterData.bank }}</p>
+                                <p class="text-style">Cash: {{ '$' + characterData.cash }}</p>
                                 <p class="text-style">Street: {{ street }}</p>
                                 <p class="text-style">Discord ID: {{ player.discordId }}</p>
                                 <span v-if="searchQuery" class="ml-auto text-yellow-300">
@@ -153,5 +136,4 @@ const searchResultClass = computed(() => {
         0 0 10px #ef4444,
         0 0 15px #ef4444;
 }
-
 </style>

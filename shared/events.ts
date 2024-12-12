@@ -2,17 +2,17 @@ export const adminpanelEvents = {
    toClient: {},
    toServer: {
       closePanel: 'adminpanel:close',
-      closeUsers: 'adminpanel:closeUsers',
+      closeUsers: 'adminpanel:close:users',
+      tpMarker: 'adminpanel:teleport:marker:hud',
    },
    webview: {
       closeAdminpanelCallback: 'adminpanel',
       closeUserpanelCallback: 'adminpanel:users',
-      getUsers: 'adminpanel:getUsers',
-
+      getUsers: 'adminpanel:get:users',
    },
    rpc: {
-      showAllUsers: 'adminpanel:showAllUsers',
-      giveAdmin: 'adminpanel:giveadmin',
+      showAllUsers: 'adminpanel:show:all:users',
+      giveAdmin: 'adminpanel:admin',
       toWaypoint: 'adminpanel:towaypoint',
    },
    bindings: {
