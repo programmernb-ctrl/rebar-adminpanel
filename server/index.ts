@@ -79,6 +79,46 @@ async function adminpanelHideUser(player: alt.Player) {
     Rebar.player.useWorld(player).enableControls();
 }
 
+async function adminpanelTpMarker(player: alt.Player) {
+    if (!player?.valid) return;
+
+    const rPlayer = Rebar.usePlayer(player);
+
+    const waypoint = await rPlayer.waypoint.get();
+    if (!waypoint) return;
+
+    const interval = alt.setInterval(async () => {
+        rPlayer.native.invoke('setFocusPosAndVel', waypoint.x, waypoint.y, waypoint.z, 0.0, 0.0, 0.0);
+
+        const groundZResponse = await rPlayer.native.invokeWithResult(
+            'getGroundZFor3dCoord',
+            waypoint.x,
+            waypoint.y,
+            waypoint.z,
+            1000,
+            false,
+            false
+        );
+
+        if (groundZResponse[0] === true && typeof groundZResponse[1] === 'number') {
+            alt.clearInterval(interval);
+            const groundZ = groundZResponse[1];
+
+            const nextTick = alt.nextTick(async () => {
+                player.frozen = true;
+                rPlayer.native.invoke('clearFocus');
+                player.pos = new alt.Vector3(waypoint.x, waypoint.y, groundZ);
+                player.frozen = false;
+                rPlayer.notify.showNotification('Teleported successfully');
+                alt.clearNextTick(nextTick);
+            });
+        } else {
+            alt.clearInterval(interval);
+            rPlayer.native.invoke('clearFocus');
+        }
+    }, 1000)
+}
+
 alt.onRpc(adminpanelEvents.rpc.giveAdmin, async (player: alt.Player) => {
     try {
         alt.log(`${player.name} called adminpanel:giveadmin rpc`);
@@ -116,6 +156,10 @@ alt.onClient(adminpanelEvents.toServer.closeUsers, async (player: alt.Player) =>
     await adminpanelHideUser(player);
     await adminpanelShow(player);
 });
+
+alt.onClient(adminpanelEvents.toServer.tpMarker, async (player: alt.Player) => {
+    await adminpanelTpMarker(player);
+})
 
 alt.once('playerConnect', async (player: alt.Player) => {
     await showView(player);
