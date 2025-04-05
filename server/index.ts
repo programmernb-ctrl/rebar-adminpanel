@@ -166,7 +166,7 @@ alt.once('playerConnect', async (player: alt.Player) => {
 });
 
 async function showView(player: alt.Player) {
-    keyBinding.on(adminpanelEvents.bindings.F4, () => {
+    keyBinding.on(adminpanelEvents.bindings.F4, (player) => {
         adminpanelShow(player);
     });
 }
